@@ -765,6 +765,7 @@ namespace ts.server {
         containsScriptInfo(info: ScriptInfo): boolean {
             if (this.isRoot(info)) return true;
             if (!this.program) return false;
+            if (this.externalFiles && this.externalFiles.indexOf(info.path) !== 1) return true;
             const file = this.program.getSourceFileByPath(info.path);
             return !!file && file.resolvedPath === info.path;
         }
