@@ -261,6 +261,8 @@ namespace ts.server {
                 return ScriptKind.TS;
             case "TSX":
                 return ScriptKind.TSX;
+            case "EXTERNAL":
+                return ScriptKind.External;
             default:
                 return ScriptKind.Unknown;
         }
@@ -1137,7 +1139,13 @@ namespace ts.server {
                 this.getOrCreateSingleInferredProjectIfEnabled() ||
                 this.getOrCreateSingleInferredWithoutProjectRoot(info.isDynamic ? this.currentDirectory : getDirectoryPath(info.path));
 
-            project.addRoot(info);
+            if (info.scriptKind === ScriptKind.External) {
+                info.attachToProject(project);
+            }
+            else {
+                project.addRoot(info);
+            }
+
             if (info.containingProjects[0] !== project) {
                 // Ensure this is first project, we could be in this scenario because info could be part of orphan project
                 info.detachFromProject(project);
@@ -1804,7 +1812,7 @@ namespace ts.server {
                 project.watchWildcards(createMapFromTemplate(parsedCommandLine.wildcardDirectories!)); // TODO: GH#18217
             }
             project.enablePluginsWithOptions(compilerOptions, this.currentPluginConfigOverrides);
-            const filesToAdd = parsedCommandLine.fileNames.concat(project.getExternalFiles());
+            const filesToAdd = parsedCommandLine.fileNames;
             this.updateRootAndOptionsOfNonInferredProject(project, filesToAdd, fileNamePropertyReader, compilerOptions, parsedCommandLine.typeAcquisition!, parsedCommandLine.compileOnSave!); // TODO: GH#18217
         }
 
@@ -1885,7 +1893,7 @@ namespace ts.server {
             const configFileName = project.getConfigFilePath();
             const fileNamesResult = getFileNamesFromConfigSpecs(configFileSpecs, getDirectoryPath(configFileName), project.getCompilationSettings(), project.getCachedDirectoryStructureHost(), this.hostConfiguration.extraFileExtensions);
             project.updateErrorOnNoInputFiles(fileNamesResult);
-            this.updateNonInferredProjectFiles(project, fileNamesResult.fileNames.concat(project.getExternalFiles()), fileNamePropertyReader);
+            this.updateNonInferredProjectFiles(project, fileNamesResult.fileNames, fileNamePropertyReader);
             return project.updateGraph();
         }
 
@@ -2004,9 +2012,9 @@ namespace ts.server {
         }
 
         /*@internal*/
-        getOrCreateScriptInfoNotOpenedByClient(uncheckedFileName: string, currentDirectory: string, hostToQueryFileExistsOn: DirectoryStructureHost) {
+        getOrCreateScriptInfoNotOpenedByClient(uncheckedFileName: string, currentDirectory: string, hostToQueryFileExistsOn: DirectoryStructureHost, scriptKind?: ScriptKind) {
             return this.getOrCreateScriptInfoNotOpenedByClientForNormalizedPath(
-                toNormalizedPath(uncheckedFileName), currentDirectory, /*scriptKind*/ undefined,
+                toNormalizedPath(uncheckedFileName), currentDirectory, scriptKind,
                 /*hasMixedContent*/ undefined, hostToQueryFileExistsOn
             );
         }
@@ -2661,6 +2669,10 @@ namespace ts.server {
                         }
                     }
                     else {
+                        const externalFiles = project.getExternalFiles() || [];
+                        if (!project.containsScriptInfo(info) && externalFiles.indexOf(info.fileName) !== -1) {
+                            project.markAsDirty();
+                        }
                         // Ensure project is ready to check if it contains opened script info
                         updateProjectIfDirty(project);
                     }
@@ -2683,7 +2695,10 @@ namespace ts.server {
                 Debug.assert(this.openFiles.has(info.path));
                 this.assignOrphanScriptInfoToInferredProject(info, this.openFiles.get(info.path));
             }
-            Debug.assert(!info.isOrphan());
+
+            if (info.scriptKind !== ScriptKind.External) {
+                Debug.assert(!info.isOrphan());
+            }
             return { configFileName, configFileErrors, defaultConfigProject };
         }
 
@@ -2875,7 +2890,7 @@ namespace ts.server {
                     const info = this.getOrCreateOpenScriptInfo(
                         scriptInfo ? scriptInfo.fileName : toNormalizedPath(file.fileName),
                         file.content,
-                        tryConvertScriptKindName(file.scriptKind!),
+                        tryConvertScriptKindName(file.scriptKind!) || ScriptKind.External,
                         file.hasMixedContent,
                         file.projectRootPath ? toNormalizedPath(file.projectRootPath) : undefined
                     );

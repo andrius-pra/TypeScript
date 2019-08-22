@@ -1471,7 +1471,7 @@ namespace ts.server.protocol {
         projectRootPath?: string;
     }
 
-    export type ScriptKindName = "TS" | "JS" | "TSX" | "JSX";
+    export type ScriptKindName = "TS" | "JS" | "TSX" | "JSX" | "EXTERNAL";
 
     /**
      * Open request; value of command field is "open". Notify the

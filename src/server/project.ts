@@ -777,6 +777,7 @@ namespace ts.server {
         containsScriptInfo(info: ScriptInfo): boolean {
             if (this.isRoot(info)) return true;
             if (!this.program) return false;
+            if (this.externalFiles && this.externalFiles.indexOf(info.fileName) !== -1) return true;
             const file = this.program.getSourceFileByPath(info.path);
             return !!file && file.resolvedPath === info.path;
         }
@@ -1002,8 +1003,13 @@ namespace ts.server {
                 // by the host for files in the program when the program is retrieved above but
                 // the program doesn't contain external files so this must be done explicitly.
                 inserted => {
-                    const scriptInfo = this.projectService.getOrCreateScriptInfoNotOpenedByClient(inserted, this.currentDirectory, this.directoryStructureHost)!;
+                    const scriptInfo = this.projectService.getOrCreateScriptInfoNotOpenedByClient(inserted, this.currentDirectory, this.directoryStructureHost, ScriptKind.External)!;
                     scriptInfo.attachToProject(this);
+                    if (scriptInfo.containingProjects[0] !== this) {
+                        // Ensure this is first project, we could be in this scenario because info could be part of orphan project
+                        scriptInfo.detachFromProject(this);
+                        scriptInfo.containingProjects.unshift(this);
+                    }
                 },
                 removed => this.detachScriptInfoFromProject(removed)
             );
