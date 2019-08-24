@@ -340,9 +340,7 @@ namespace ts.server {
                 this.textStorage.reload("");
                 this.realpath = this.path;
             }
-            this.scriptKind = scriptKind
-                ? scriptKind
-                : getScriptKindFromFileName(fileName);
+            this.scriptKind = ensureScriptKind(fileName, scriptKind);
         }
 
         /*@internal*/

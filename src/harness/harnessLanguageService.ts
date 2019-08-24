@@ -850,6 +850,39 @@ namespace Harness.LanguageService {
                         }),
                         error: undefined
                     };
+                case "html-diagnostic-adder":
+                    return {
+                        module: () => ({
+                            getExternalFiles(project: ts.server.Project): string[] | undefined {
+                                const externalProjectFiles = [
+                                    "/tests/cases/fourslash/server/b.html"
+                                ];
+
+                                return externalProjectFiles.filter(file => !!project.getScriptInfo(file));
+                            },
+                            create(info: ts.server.PluginCreateInfo) {
+                                const proxy = makeDefaultProxy(info);
+                                proxy.getSemanticDiagnostics = filename => {
+                                    const fileWithError = "/tests/cases/fourslash/server/b.html";
+                                    const base = info.languageService.getSemanticDiagnostics(filename);
+                                    const scriptInfo = info.project.getScriptInfo(filename);
+                                    if (scriptInfo && filename === fileWithError) {
+                                        base.push({
+                                            category: ts.DiagnosticCategory.Error,
+                                            file: undefined,
+                                            code: 9999,
+                                            length: 3,
+                                            messageText: `[html-diagnostic-adder] error`,
+                                            start: 0
+                                        });
+                                    }
+                                    return base;
+                                };
+                                return proxy;
+                            }
+                        }),
+                        error: undefined
+                    };
 
                 // Accepts configurations
                 case "configurable-diagnostic-adder":
