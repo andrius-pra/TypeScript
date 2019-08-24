@@ -235,6 +235,7 @@ namespace ts.server.typingsInstaller {
     if (log.isEnabled()) {
         process.on("uncaughtException", (e: Error) => {
             log.writeLine(`Unhandled exception: ${e} at ${e.stack}`);
+            process.exit(1);
         });
     }
     process.on("disconnect", () => {

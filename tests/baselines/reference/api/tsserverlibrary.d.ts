@@ -6933,7 +6933,7 @@ declare namespace ts.server.protocol {
          */
         projectRootPath?: string;
     }
-    type ScriptKindName = "TS" | "JS" | "TSX" | "JSX";
+    type ScriptKindName = "TS" | "JS" | "TSX" | "JSX" | "EXTERNAL";
     /**
      * Open request; value of command field is "open". Notify the
      * server that the client has file open.  The server will not
@@ -8514,6 +8514,7 @@ declare namespace ts.server {
         containsFile(filename: NormalizedPath, requireOpen?: boolean): boolean;
         isRoot(info: ScriptInfo): boolean;
         addRoot(info: ScriptInfo): void;
+        addExternalFile(info: ScriptInfo): void;
         addMissingFileRoot(fileName: NormalizedPath): void;
         removeFile(info: ScriptInfo, fileExists: boolean, detachFromProject: boolean): void;
         registerFileUpdate(fileName: string): void;
@@ -8741,7 +8742,7 @@ declare namespace ts.server {
     export function convertFormatOptions(protocolOptions: protocol.FormatCodeSettings): FormatCodeSettings;
     export function convertCompilerOptions(protocolOptions: protocol.ExternalProjectCompilerOptions): CompilerOptions & protocol.CompileOnSaveMixin;
     export function tryConvertScriptKindName(scriptKindName: protocol.ScriptKindName | ScriptKind): ScriptKind;
-    export function convertScriptKindName(scriptKindName: protocol.ScriptKindName): ScriptKind.Unknown | ScriptKind.JS | ScriptKind.JSX | ScriptKind.TS | ScriptKind.TSX;
+    export function convertScriptKindName(scriptKindName: protocol.ScriptKindName): ScriptKind.Unknown | ScriptKind.JS | ScriptKind.JSX | ScriptKind.TS | ScriptKind.TSX | ScriptKind.External;
     export interface HostConfiguration {
         formatCodeOptions: FormatCodeSettings;
         preferences: protocol.UserPreferences;
