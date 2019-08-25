@@ -967,6 +967,7 @@ namespace ts.server {
     const ioSession = new IOSession();
     process.on("uncaughtException", err => {
         ioSession.logError(err, "unknown");
+        process.exit(1);
     });
     // See https://github.com/Microsoft/TypeScript/issues/11348
     (process as any).noAsar = true;
