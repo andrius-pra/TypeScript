@@ -1416,6 +1416,9 @@ namespace ts {
 
         /// Diagnostics
         function getSyntacticDiagnostics(fileName: string): DiagnosticWithLocation[] {
+            if (isExternalFile(fileName)) {
+                return [];
+            }
             synchronizeHostData();
 
             return program.getSyntacticDiagnostics(getValidSourceFile(fileName), cancellationToken).slice();
@@ -1426,6 +1429,9 @@ namespace ts {
          * If '-d' enabled, report both semantic and emitter errors
          */
         function getSemanticDiagnostics(fileName: string): Diagnostic[] {
+            if (isExternalFile(fileName)) {
+                return [];
+            }
             synchronizeHostData();
 
             const targetSourceFile = getValidSourceFile(fileName);
@@ -1444,6 +1450,9 @@ namespace ts {
         }
 
         function getSuggestionDiagnostics(fileName: string): DiagnosticWithLocation[] {
+            if (isExternalFile(fileName)) {
+                return [];
+            }
             synchronizeHostData();
             return computeSuggestionDiagnostics(getValidSourceFile(fileName), program, cancellationToken);
         }
@@ -1454,6 +1463,9 @@ namespace ts {
         }
 
         function getCompletionsAtPosition(fileName: string, position: number, options: GetCompletionsAtPositionOptions = emptyOptions): CompletionInfo | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             // Convert from deprecated options names to new names
             const fullPreferences: UserPreferences = {
                 ...identity<UserPreferences>(options), // avoid excess property check
@@ -1472,6 +1484,9 @@ namespace ts {
         }
 
         function getCompletionEntryDetails(fileName: string, position: number, name: string, formattingOptions: FormatCodeSettings | undefined, source: string | undefined, preferences: UserPreferences = emptyOptions): CompletionEntryDetails | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             synchronizeHostData();
             return Completions.getCompletionEntryDetails(
                 program,
@@ -1487,11 +1502,17 @@ namespace ts {
         }
 
         function getCompletionEntrySymbol(fileName: string, position: number, name: string, source?: string, preferences: UserPreferences = emptyOptions): Symbol | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             synchronizeHostData();
             return Completions.getCompletionEntrySymbol(program, log, getValidSourceFile(fileName), position, { name, source }, host, preferences);
         }
 
         function getQuickInfoAtPosition(fileName: string, position: number): QuickInfo | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             synchronizeHostData();
 
             const sourceFile = getValidSourceFile(fileName);
@@ -1556,16 +1577,25 @@ namespace ts {
 
         /// Goto definition
         function getDefinitionAtPosition(fileName: string, position: number): readonly DefinitionInfo[] | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             synchronizeHostData();
             return GoToDefinition.getDefinitionAtPosition(program, getValidSourceFile(fileName), position);
         }
 
         function getDefinitionAndBoundSpan(fileName: string, position: number): DefinitionInfoAndBoundSpan | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             synchronizeHostData();
             return GoToDefinition.getDefinitionAndBoundSpan(program, getValidSourceFile(fileName), position);
         }
 
         function getTypeDefinitionAtPosition(fileName: string, position: number): readonly DefinitionInfo[] | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             synchronizeHostData();
             return GoToDefinition.getTypeDefinitionAtPosition(program.getTypeChecker(), getValidSourceFile(fileName), position);
         }
@@ -1573,12 +1603,18 @@ namespace ts {
         /// Goto implementation
 
         function getImplementationAtPosition(fileName: string, position: number): ImplementationLocation[] | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             synchronizeHostData();
             return FindAllReferences.getImplementationsAtPosition(program, cancellationToken, program.getSourceFiles(), getValidSourceFile(fileName), position);
         }
 
         /// References and Occurrences
         function getOccurrencesAtPosition(fileName: string, position: number): readonly ReferenceEntry[] | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             return flatMap(
                 getDocumentHighlights(fileName, position, [fileName]),
                 entry => entry.highlightSpans.map<ReferenceEntry>(highlightSpan => ({
@@ -1593,6 +1629,9 @@ namespace ts {
         }
 
         function getDocumentHighlights(fileName: string, position: number, filesToSearch: readonly string[]): DocumentHighlights[] | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             const normalizedFileName = normalizePath(fileName);
             Debug.assert(filesToSearch.some(f => normalizePath(f) === normalizedFileName));
             synchronizeHostData();
@@ -1602,6 +1641,9 @@ namespace ts {
         }
 
         function findRenameLocations(fileName: string, position: number, findInStrings: boolean, findInComments: boolean, providePrefixAndSuffixTextForRename?: boolean): RenameLocation[] | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             synchronizeHostData();
             const sourceFile = getValidSourceFile(fileName);
             const node = getAdjustedRenameLocation(getTouchingPropertyName(sourceFile, position));
@@ -1623,6 +1665,9 @@ namespace ts {
         }
 
         function getReferencesAtPosition(fileName: string, position: number): ReferenceEntry[] | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             synchronizeHostData();
             return getReferencesWorker(getTouchingPropertyName(getValidSourceFile(fileName), position), position, { use: FindAllReferences.FindReferencesUse.References }, FindAllReferences.toReferenceEntry);
         }
@@ -1639,17 +1684,26 @@ namespace ts {
         }
 
         function findReferences(fileName: string, position: number): ReferencedSymbol[] | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             synchronizeHostData();
             return FindAllReferences.findReferencedSymbols(program, cancellationToken, program.getSourceFiles(), getValidSourceFile(fileName), position);
         }
 
         function getNavigateToItems(searchValue: string, maxResultCount?: number, fileName?: string, excludeDtsFiles = false): NavigateToItem[] {
+            if (fileName && isExternalFile(fileName)) {
+                return [];
+            }
             synchronizeHostData();
             const sourceFiles = fileName ? [getValidSourceFile(fileName)] : program.getSourceFiles();
             return NavigateTo.getNavigateToItems(sourceFiles, program.getTypeChecker(), cancellationToken, searchValue, maxResultCount, excludeDtsFiles);
         }
 
         function getEmitOutput(fileName: string, emitOnlyDtsFiles?: boolean, forceDtsEmit?: boolean) {
+            if (fileName && isExternalFile(fileName)) {
+                return { emitSkipped: true, outputFiles: [], diagnostics:[] };
+            }
             synchronizeHostData();
 
             const sourceFile = getValidSourceFile(fileName);
@@ -1662,6 +1716,9 @@ namespace ts {
          * This is a semantic operation.
          */
         function getSignatureHelpItems(fileName: string, position: number, { triggerReason }: SignatureHelpItemsOptions = emptyOptions): SignatureHelpItems | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             synchronizeHostData();
 
             const sourceFile = getValidSourceFile(fileName);
@@ -1675,6 +1732,9 @@ namespace ts {
         }
 
         function getNameOrDottedNameSpan(fileName: string, startPos: number, _endPos: number): TextSpan | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             const sourceFile = syntaxTreeCache.getCurrentSourceFile(fileName);
 
             // Get node at the location
@@ -1732,6 +1792,9 @@ namespace ts {
         }
 
         function getBreakpointStatementAtPosition(fileName: string, position: number): TextSpan | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             // doesn't use compiler - no need to synchronize with host
             const sourceFile = syntaxTreeCache.getCurrentSourceFile(fileName);
 
@@ -1739,16 +1802,34 @@ namespace ts {
         }
 
         function getNavigationBarItems(fileName: string): NavigationBarItem[] {
+            if (isExternalFile(fileName)) {
+                return [];
+            }
             return NavigationBar.getNavigationBarItems(syntaxTreeCache.getCurrentSourceFile(fileName), cancellationToken);
         }
 
         function getNavigationTree(fileName: string): NavigationTree {
+            if (isExternalFile(fileName)) {
+                return {
+                    kind: ScriptElementKind.unknown,
+                    kindModifiers: "",
+                    spans: [],
+                    text: "",
+                    nameSpan: undefined,
+                    childItems: undefined
+                };
+            }
             return NavigationBar.getNavigationTree(syntaxTreeCache.getCurrentSourceFile(fileName), cancellationToken);
         }
 
         function isTsOrTsxFile(fileName: string): boolean {
             const kind = getScriptKind(fileName, host);
             return kind === ScriptKind.TS || kind === ScriptKind.TSX;
+        }
+
+        function isExternalFile(fileName: string): boolean {
+            const kind = host && host.getScriptKind && host.getScriptKind(fileName);
+            return kind === ScriptKind.External;
         }
 
         function getSemanticClassifications(fileName: string, span: TextSpan): ClassifiedSpan[] {
@@ -1770,16 +1851,25 @@ namespace ts {
         }
 
         function getSyntacticClassifications(fileName: string, span: TextSpan): ClassifiedSpan[] {
+            if (isExternalFile(fileName)) {
+                return [];
+            }
             // doesn't use compiler - no need to synchronize with host
             return ts.getSyntacticClassifications(cancellationToken, syntaxTreeCache.getCurrentSourceFile(fileName), span);
         }
 
         function getEncodedSyntacticClassifications(fileName: string, span: TextSpan): Classifications {
+            if (isExternalFile(fileName)) {
+                return { spans: [], endOfLineState: EndOfLineState.None };
+            }
             // doesn't use compiler - no need to synchronize with host
             return ts.getEncodedSyntacticClassifications(cancellationToken, syntaxTreeCache.getCurrentSourceFile(fileName), span);
         }
 
         function getOutliningSpans(fileName: string): OutliningSpan[] {
+            if (isExternalFile(fileName)) {
+                return [];
+            }
             // doesn't use compiler - no need to synchronize with host
             const sourceFile = syntaxTreeCache.getCurrentSourceFile(fileName);
             return OutliningElementsCollector.collectElements(sourceFile, cancellationToken);
@@ -1794,6 +1884,9 @@ namespace ts {
         braceMatching.forEach((value, key) => braceMatching.set(value.toString(), Number(key) as SyntaxKind));
 
         function getBraceMatchingAtPosition(fileName: string, position: number): TextSpan[] {
+            if (isExternalFile(fileName)) {
+                return [];
+            }
             const sourceFile = syntaxTreeCache.getCurrentSourceFile(fileName);
             const token = getTouchingToken(sourceFile, position);
             const matchKind = token.getStart(sourceFile) === position ? braceMatching.get(token.kind.toString()) : undefined;
@@ -1803,6 +1896,9 @@ namespace ts {
         }
 
         function getIndentationAtPosition(fileName: string, position: number, editorOptions: EditorOptions | EditorSettings) {
+            if (isExternalFile(fileName)) {
+                return 0;
+            }
             let start = timestamp();
             const settings = toEditorSettings(editorOptions);
             const sourceFile = syntaxTreeCache.getCurrentSourceFile(fileName);
@@ -1817,15 +1913,24 @@ namespace ts {
         }
 
         function getFormattingEditsForRange(fileName: string, start: number, end: number, options: FormatCodeOptions | FormatCodeSettings): TextChange[] {
+            if (isExternalFile(fileName)) {
+                return [];
+            }
             const sourceFile = syntaxTreeCache.getCurrentSourceFile(fileName);
             return formatting.formatSelection(start, end, sourceFile, formatting.getFormatContext(toEditorSettings(options), host));
         }
 
         function getFormattingEditsForDocument(fileName: string, options: FormatCodeOptions | FormatCodeSettings): TextChange[] {
+            if (isExternalFile(fileName)) {
+                return [];
+            }
             return formatting.formatDocument(syntaxTreeCache.getCurrentSourceFile(fileName), formatting.getFormatContext(toEditorSettings(options), host));
         }
 
         function getFormattingEditsAfterKeystroke(fileName: string, position: number, key: string, options: FormatCodeOptions | FormatCodeSettings): TextChange[] {
+            if (isExternalFile(fileName)) {
+                return [];
+            }
             const sourceFile = syntaxTreeCache.getCurrentSourceFile(fileName);
             const formatContext = formatting.getFormatContext(toEditorSettings(options), host);
 
@@ -1846,6 +1951,9 @@ namespace ts {
         }
 
         function getCodeFixesAtPosition(fileName: string, start: number, end: number, errorCodes: readonly number[], formatOptions: FormatCodeSettings, preferences: UserPreferences = emptyOptions): readonly CodeFixAction[] {
+            if (isExternalFile(fileName)) {
+                return [];
+            }
             synchronizeHostData();
             const sourceFile = getValidSourceFile(fileName);
             const span = createTextSpanFromBounds(start, end);
@@ -1858,6 +1966,9 @@ namespace ts {
         }
 
         function getCombinedCodeFix(scope: CombinedCodeFixScope, fixId: {}, formatOptions: FormatCodeSettings, preferences: UserPreferences = emptyOptions): CombinedCodeActions {
+            if (isExternalFile(scope.fileName)) {
+                return { changes: [] };
+            }
             synchronizeHostData();
             Debug.assert(scope.type === "file");
             const sourceFile = getValidSourceFile(scope.fileName);
@@ -1867,6 +1978,9 @@ namespace ts {
         }
 
         function organizeImports(scope: OrganizeImportsScope, formatOptions: FormatCodeSettings, preferences: UserPreferences = emptyOptions): readonly FileTextChanges[] {
+            if (isExternalFile(scope.fileName)) {
+                return [];
+            }
             synchronizeHostData();
             Debug.assert(scope.type === "file");
             const sourceFile = getValidSourceFile(scope.fileName);
@@ -1898,10 +2012,16 @@ namespace ts {
         }
 
         function getDocCommentTemplateAtPosition(fileName: string, position: number): TextInsertion | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             return JsDoc.getDocCommentTemplateAtPosition(getNewLineOrDefaultFromHost(host), syntaxTreeCache.getCurrentSourceFile(fileName), position);
         }
 
         function isValidBraceCompletionAtPosition(fileName: string, position: number, openingBrace: number): boolean {
+            if (isExternalFile(fileName)) {
+                return true;
+            }
             // '<' is currently not supported, figuring out if we're in a Generic Type vs. a comparison is too
             // expensive to do during typing scenarios
             // i.e. whether we're dealing with:
@@ -1938,6 +2058,9 @@ namespace ts {
         }
 
         function getJsxClosingTagAtPosition(fileName: string, position: number): JsxClosingTagInfo | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             const sourceFile = syntaxTreeCache.getCurrentSourceFile(fileName);
             const token = findPrecedingToken(position, sourceFile);
             if (!token) return undefined;
@@ -1954,12 +2077,18 @@ namespace ts {
         }
 
         function getSpanOfEnclosingComment(fileName: string, position: number, onlyMultiLine: boolean): TextSpan | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             const sourceFile = syntaxTreeCache.getCurrentSourceFile(fileName);
             const range = formatting.getRangeOfEnclosingComment(sourceFile, position);
             return range && (!onlyMultiLine || range.kind === SyntaxKind.MultiLineCommentTrivia) ? createTextSpanFromRange(range) : undefined;
         }
 
         function getTodoComments(fileName: string, descriptors: TodoCommentDescriptor[]): TodoComment[] {
+            if (isExternalFile(fileName)) {
+                return [];
+            }
             // Note: while getting todo comments seems like a syntactic operation, we actually
             // treat it as a semantic operation here.  This is because we expect our host to call
             // this on every single file.  If we treat this syntactically, then that will cause
@@ -2107,6 +2236,9 @@ namespace ts {
         }
 
         function getRenameInfo(fileName: string, position: number, options?: RenameInfoOptions): RenameInfo {
+            if (isExternalFile(fileName)) {
+                return { canRename: false, localizedErrorMessage: getLocaleSpecificMessage(Diagnostics.You_cannot_rename_this_element) };
+            }
             synchronizeHostData();
             return Rename.getRenameInfo(program, getValidSourceFile(fileName), position, options);
         }
@@ -2126,10 +2258,19 @@ namespace ts {
         }
 
         function getSmartSelectionRange(fileName: string, position: number): SelectionRange {
+            if (isExternalFile(fileName)) {
+                const scriptSnapshot = host.getScriptSnapshot(fileName)!;
+                return {
+                    textSpan: createTextSpanFromBounds(0, scriptSnapshot.getLength())
+                };
+            }
             return SmartSelectionRange.getSmartSelectionRange(position, syntaxTreeCache.getCurrentSourceFile(fileName));
         }
 
         function getApplicableRefactors(fileName: string, positionOrRange: number | TextRange, preferences: UserPreferences = emptyOptions): ApplicableRefactorInfo[] {
+            if (isExternalFile(fileName)) {
+                return [];
+            }
             synchronizeHostData();
             const file = getValidSourceFile(fileName);
             return refactor.getApplicableRefactors(getRefactorContext(file, positionOrRange, preferences));
@@ -2143,6 +2284,9 @@ namespace ts {
             actionName: string,
             preferences: UserPreferences = emptyOptions,
         ): RefactorEditInfo | undefined {
+            if (isExternalFile(fileName)) {
+                return undefined;
+            }
             synchronizeHostData();
             const file = getValidSourceFile(fileName);
             return refactor.getEditsForRefactor(getRefactorContext(file, positionOrRange, preferences, formatOptions), refactorName, actionName);

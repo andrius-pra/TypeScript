@@ -202,7 +202,7 @@ namespace ts.projectSystem {
 
                 const host = createServerHost([file1, config1]);
                 const projectService = createProjectService(host, { useSingleInferredProject: true }, { syntaxOnly: true });
-                projectService.applyChangesInOpenFiles(singleIterator({ fileName: file1.path, content: file1.content }));
+                projectService.applyChangesInOpenFiles(singleIterator({ fileName: file1.path, content: file1.content, scriptKind: "TS" }));
 
                 checkNumberOfProjects(projectService, { inferredProjects: 1 });
                 const proj = projectService.inferredProjects[0];
@@ -579,7 +579,8 @@ namespace ts.projectSystem {
             const tsFile = {
                 fileName: "/a/b/file1.ts",
                 path: "/a/b/file1.ts",
-                content: ""
+                content: "",
+                scriptKind: "TS" as "TS"
             };
             const jsFile = {
                 path: "/a/b/file1.js",
