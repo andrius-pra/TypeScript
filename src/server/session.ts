@@ -861,7 +861,7 @@ namespace ts.server {
         private semanticCheck(file: NormalizedPath, project: Project) {
             const diags = isDeclarationFileInJSOnlyNonConfiguredProject(project, file)
                 ? emptyArray
-                : project.getLanguageService().getSemanticDiagnostics(file).filter(d => !!d.file);
+                : project.getLanguageService().getSemanticDiagnostics(file).filter(d => !!d.file || d.source === 'ng');
             this.sendDiagnosticsEvent(file, project, diags, "semanticDiag");
         }
 
